@@ -11,6 +11,11 @@
 #define pi 3.14159265358979323846264338327
 #define PI_OVER_360 0.0087266
 
+typedef struct
+{
+    float x,y,z,r,g,b,a,u,v;
+} Vertex;
+
 GLuint _positionSlot;
 GLuint _colorSlot;
 GLuint _texCoordSlot;
@@ -29,26 +34,25 @@ float translationMatrix[16] = {0};
 float rotationMatrix[16] = {0};
 float transRotMatrix[16] = {0}; //To store the result of the translation matrix multiplied by the rotation matrix
 float angle = 0;
+float animationMillies = 0;
+float animationLoopTime = 800;
+float xFrameWidth = .162;
 float rotAxis[3] = {1,.1,.5};
 float quat[4] = {0}; //rotation quaternion
 float xx,yy,zz,xy,xz,yz,wx,wy,wz;
+Vertex* Vertices;
 
 //testing
 GLuint textureReference;
 
-typedef struct
-{
-    float Position[3];
-    float Color[4];
-    float TexCoord[2];
-} Vertex;
 
-const Vertex Vertices[] = {
-    {{-1,-1,-10},{1,1,1,1},{0,0}},
-    {{-1,1,-10},{1,1,1,1},{0,1}},
-    {{1,-1,-10},{1,1,1,1},{1,0}},
-    {{1,1,-10},{1,1,1,1},{1,1}}
-};
+
+//const Vertex Vertices[] = {
+//    {{-1,-1,-10},{1,1,1,1},{0,1}},
+//    {{1,-1,-10},{1,1,1,1},{1,1}},
+//    {{-1,1,-10},{1,1,1,1},{0,0}},
+//    {{1,1,-10},{1,1,1,1},{1,0}}
+//};
 
 const GLuint Indices[] = {
     0,1,2,
@@ -192,7 +196,7 @@ void setupVBOs()
     GLuint vertexBuffer;
     glGenBuffers(1, &vertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 4*sizeof(Vertex), Vertices, GL_DYNAMIC_DRAW);
     
     GLuint indexBuffer;
     glGenBuffers(1, &indexBuffer);
@@ -202,15 +206,24 @@ void setupVBOs()
 
 void initView(float screenWidthInPixelsPar, float screenHeightInPixelsPar)
 {
+    Vertices = malloc(4*sizeof(Vertex));
+    //TODO ****** free memory for vertices
+    Vertices[0].x=-1;Vertices[0].y=-1;Vertices[0].z=-10;Vertices[0].r=1;Vertices[0].g=1;Vertices[0].b=1;Vertices[0].a=1;Vertices[0].u= 0;Vertices[0].v=.2;
+    Vertices[1].x= 1;Vertices[1].y=-1;Vertices[1].z=-10;Vertices[1].r=1;Vertices[1].g=1;Vertices[1].b=1;Vertices[1].a=1;Vertices[1].u=.2;Vertices[1].v=.2;
+    Vertices[2].x=-1;Vertices[2].y= 1;Vertices[2].z=-10;Vertices[2].r=1;Vertices[2].g=1;Vertices[2].b=1;Vertices[2].a=1;Vertices[2].u= 0;Vertices[2].v= 0;
+    Vertices[3].x= 1;Vertices[3].y= 1;Vertices[3].z=-10;Vertices[3].r=1;Vertices[3].g=1;Vertices[3].b=1;Vertices[3].a=1;Vertices[3].u=.2;Vertices[3].v= 0;
+    
     compileShaders();
     setupVBOs();
+    
+    
     
     screenWidthInPixels = screenWidthInPixelsPar;
     screenHeightInPixels = screenHeightInPixelsPar;
     
-    float fov=30.0f; // in degrees
+    float fov=20.0f; // in degrees
     float aspect=((float)screenWidthInPixels)/screenHeightInPixels;
-    float znear=10.0f;
+    float znear=9.0f;
     float zfar=1000.0f;
     buildPerspProjMat(perspectiveMatrix, fov, aspect, znear, zfar);
     glViewport(0, 0, screenWidthInPixels, screenHeightInPixels);
@@ -231,6 +244,188 @@ void initView(float screenWidthInPixelsPar, float screenHeightInPixelsPar)
 void renderScene(int timeDiffMillies)
 {
     angle += 0.001 * timeDiffMillies; if(angle > 2*pi) angle = 0;
+    animationMillies = fmodf(animationMillies + timeDiffMillies, animationLoopTime);
+    
+    
+    //Switch the frames!
+    if(animationMillies < (1*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*0;Vertices[0].v=.2;
+        Vertices[1].u=xFrameWidth*1;Vertices[1].v=.2;
+        Vertices[2].u=xFrameWidth*0;Vertices[2].v= 0;
+        Vertices[3].u=xFrameWidth*1;Vertices[3].v= 0;
+    }
+    else if(animationMillies < (2*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*1;Vertices[0].v=.2;
+        Vertices[1].u=xFrameWidth*2;Vertices[1].v=.2;
+        Vertices[2].u=xFrameWidth*1;Vertices[2].v= 0;
+        Vertices[3].u=xFrameWidth*2;Vertices[3].v= 0;
+    }
+    else if(animationMillies < (3*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*2;Vertices[0].v=.2;
+        Vertices[1].u=xFrameWidth*3;Vertices[1].v=.2;
+        Vertices[2].u=xFrameWidth*2;Vertices[2].v= 0;
+        Vertices[3].u=xFrameWidth*3;Vertices[3].v= 0;
+    }
+    else if(animationMillies < (4*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*3;Vertices[0].v=.2;
+        Vertices[1].u=xFrameWidth*4;Vertices[1].v=.2;
+        Vertices[2].u=xFrameWidth*3;Vertices[2].v= 0;
+        Vertices[3].u=xFrameWidth*4;Vertices[3].v= 0;
+    }
+    else if(animationMillies < (5*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*4;Vertices[0].v=.2;
+        Vertices[1].u=xFrameWidth*5;Vertices[1].v=.2;
+        Vertices[2].u=xFrameWidth*4;Vertices[2].v= 0;
+        Vertices[3].u=xFrameWidth*5;Vertices[3].v= 0;
+    }
+    else if(animationMillies < (6*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*0;Vertices[0].v=.4;
+        Vertices[1].u=xFrameWidth*1;Vertices[1].v=.4;
+        Vertices[2].u=xFrameWidth*0;Vertices[2].v=.2;
+        Vertices[3].u=xFrameWidth*1;Vertices[3].v=.2;
+    }
+    else if(animationMillies < (7*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*1;Vertices[0].v=.4;
+        Vertices[1].u=xFrameWidth*2;Vertices[1].v=.4;
+        Vertices[2].u=xFrameWidth*1;Vertices[2].v=.2;
+        Vertices[3].u=xFrameWidth*2;Vertices[3].v=.2;
+    }
+    else if(animationMillies < (8*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*2;Vertices[0].v=.4;
+        Vertices[1].u=xFrameWidth*3;Vertices[1].v=.4;
+        Vertices[2].u=xFrameWidth*2;Vertices[2].v=.2;
+        Vertices[3].u=xFrameWidth*3;Vertices[3].v=.2;
+    }
+    else if(animationMillies < (9*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*3;Vertices[0].v=.4;
+        Vertices[1].u=xFrameWidth*4;Vertices[1].v=.4;
+        Vertices[2].u=xFrameWidth*3;Vertices[2].v=.2;
+        Vertices[3].u=xFrameWidth*4;Vertices[3].v=.2;
+    }
+    else if(animationMillies < (10*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*4;Vertices[0].v=.4;
+        Vertices[1].u=xFrameWidth*5;Vertices[1].v=.4;
+        Vertices[2].u=xFrameWidth*4;Vertices[2].v=.2;
+        Vertices[3].u=xFrameWidth*5;Vertices[3].v=.2;
+    }
+    else if(animationMillies < (11*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*0;Vertices[0].v=.6;
+        Vertices[1].u=xFrameWidth*1;Vertices[1].v=.6;
+        Vertices[2].u=xFrameWidth*0;Vertices[2].v=.4;
+        Vertices[3].u=xFrameWidth*1;Vertices[3].v=.4;
+    }
+    else if(animationMillies < (12*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*1;Vertices[0].v=.6;
+        Vertices[1].u=xFrameWidth*2;Vertices[1].v=.6;
+        Vertices[2].u=xFrameWidth*1;Vertices[2].v=.4;
+        Vertices[3].u=xFrameWidth*2;Vertices[3].v=.4;
+    }
+    else if(animationMillies < (13*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*2;Vertices[0].v=.6;
+        Vertices[1].u=xFrameWidth*3;Vertices[1].v=.6;
+        Vertices[2].u=xFrameWidth*2;Vertices[2].v=.4;
+        Vertices[3].u=xFrameWidth*3;Vertices[3].v=.4;
+    }
+    else if(animationMillies < (14*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*3;Vertices[0].v=.6;
+        Vertices[1].u=xFrameWidth*4;Vertices[1].v=.6;
+        Vertices[2].u=xFrameWidth*3;Vertices[2].v=.4;
+        Vertices[3].u=xFrameWidth*4;Vertices[3].v=.4;
+    }
+    else if(animationMillies < (15*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*4;Vertices[0].v=.6;
+        Vertices[1].u=xFrameWidth*5;Vertices[1].v=.6;
+        Vertices[2].u=xFrameWidth*4;Vertices[2].v=.4;
+        Vertices[3].u=xFrameWidth*5;Vertices[3].v=.4;
+    }
+    else if(animationMillies < (16*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*0;Vertices[0].v=.8;
+        Vertices[1].u=xFrameWidth*1;Vertices[1].v=.8;
+        Vertices[2].u=xFrameWidth*0;Vertices[2].v=.6;
+        Vertices[3].u=xFrameWidth*1;Vertices[3].v=.6;
+    }
+    else if(animationMillies < (17*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*1;Vertices[0].v=.8;
+        Vertices[1].u=xFrameWidth*2;Vertices[1].v=.8;
+        Vertices[2].u=xFrameWidth*1;Vertices[2].v=.6;
+        Vertices[3].u=xFrameWidth*2;Vertices[3].v=.6;
+    }
+    else if(animationMillies < (18*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*2;Vertices[0].v=.8;
+        Vertices[1].u=xFrameWidth*3;Vertices[1].v=.8;
+        Vertices[2].u=xFrameWidth*2;Vertices[2].v=.6;
+        Vertices[3].u=xFrameWidth*3;Vertices[3].v=.6;
+    }
+    else if(animationMillies < (19*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*3;Vertices[0].v=.8;
+        Vertices[1].u=xFrameWidth*4;Vertices[1].v=.8;
+        Vertices[2].u=xFrameWidth*3;Vertices[2].v=.6;
+        Vertices[3].u=xFrameWidth*4;Vertices[3].v=.6;
+    }
+    else if(animationMillies < (20*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*4;Vertices[0].v=.8;
+        Vertices[1].u=xFrameWidth*5;Vertices[1].v=.8;
+        Vertices[2].u=xFrameWidth*4;Vertices[2].v=.6;
+        Vertices[3].u=xFrameWidth*5;Vertices[3].v=.6;
+    }
+    else if(animationMillies < (21*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*0;Vertices[0].v=1;
+        Vertices[1].u=xFrameWidth*1;Vertices[1].v=1;
+        Vertices[2].u=xFrameWidth*0;Vertices[2].v=.8;
+        Vertices[3].u=xFrameWidth*1;Vertices[3].v=.8;
+    }
+    else if(animationMillies < (22*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*1;Vertices[0].v=1;
+        Vertices[1].u=xFrameWidth*2;Vertices[1].v=1;
+        Vertices[2].u=xFrameWidth*1;Vertices[2].v=.8;
+        Vertices[3].u=xFrameWidth*2;Vertices[3].v=.8;
+    }
+    else if(animationMillies < (23*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*2;Vertices[0].v=1;
+        Vertices[1].u=xFrameWidth*3;Vertices[1].v=1;
+        Vertices[2].u=xFrameWidth*2;Vertices[2].v=.8;
+        Vertices[3].u=xFrameWidth*3;Vertices[3].v=.8;
+    }
+    else if(animationMillies < (24*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*3;Vertices[0].v=1;
+        Vertices[1].u=xFrameWidth*4;Vertices[1].v=1;
+        Vertices[2].u=xFrameWidth*3;Vertices[2].v=.8;
+        Vertices[3].u=xFrameWidth*4;Vertices[3].v=.8;
+    }
+    else if(animationMillies < (25*(animationLoopTime/25)))
+    {
+        Vertices[0].u=xFrameWidth*4;Vertices[0].v=1;
+        Vertices[1].u=xFrameWidth*5;Vertices[1].v=1;
+        Vertices[2].u=xFrameWidth*4;Vertices[2].v=.8;
+        Vertices[3].u=xFrameWidth*5;Vertices[3].v=.8;
+    }
+    
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(Vertex), Vertices);
+    
     
     setTranslationMatrix(translationMatrix, 0,0,-1);//10*cos(angle), 2*sin(angle), -100 + 100*sin(angle));
     matMult4x4by4x4(modelMatrix, perspectiveMatrix, translationMatrix);
@@ -243,7 +438,6 @@ void renderScene(int timeDiffMillies)
     glVertexAttribPointer(_positionSlot, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
     glVertexAttribPointer(_colorSlot, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*) (sizeof(float) * 3));
     glVertexAttribPointer(_texCoordSlot, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*) (sizeof(float) * 7));
-    
     
     
     
